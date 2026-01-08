@@ -8,7 +8,7 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 파스텔 톤앤매너 CSS
+# 2. 요청 사항이 반영된 CSS 디자인
 st.markdown("""
     <style>
     /* 배경: 연한 블루빛 회색 */
@@ -35,20 +35,26 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
 
-    /* 프로젝트 카드 */
+    /* 프로젝트 카드: 배경 흰색으로 고정 */
     .project-card {
+        background-color: #FFFFFF;
         border-radius: 20px;
         padding: 22px;
         margin-bottom: 15px;
-        border: none;
+        border: 1px solid rgba(0,0,0,0.05);
         box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         transition: transform 0.2s ease;
     }
     .project-card:hover { transform: translateY(-3px); }
 
+    /* 프로젝트 명 (카테고리 컬러 적용) */
     .card-project-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
-    .card-desc { font-size: 0.9rem; line-height: 1.5; margin-bottom: 18px; opacity: 0.8; font-weight: 500; }
-    .card-manager { font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; margin-bottom: 18px; }
+    
+    /* 설명 (기존 타이틀 컬러인 검정색 적용) */
+    .card-desc { font-size: 0.9rem; line-height: 1.5; margin-bottom: 18px; color: #1A1A1A; font-weight: 500; }
+    
+    /* 담당자: 폰트 줄임, Regular(400), 투명도 70% */
+    .card-manager { font-size: 0.75rem; font-weight: 400; color: #1A1A1A; opacity: 0.7; margin-bottom: 18px; }
     
     /* 뱃지 디자인 */
     .badge-wrapper { display: flex; gap: 6px; }
@@ -68,15 +74,15 @@ def load_data():
     df['Date'] = pd.to_datetime(df['Date'])
     return df
 
-# 새 카테고리 기준 색상 팔레트
+# 카테고리별 컬러 팔레트 (텍스트 및 뱃지용)
 COLOR_PALETTE = {
-    "논의": {"bg": "#F1F3F5", "main": "#495057"},   # 차분한 그레이
-    "기획": {"bg": "#FFF5F0", "main": "#FF9500"},   # 화사한 오렌지
-    "디자인": {"bg": "#F5F0FF", "main": "#5E5CE6"}, # 세련된 퍼플
-    "개발": {"bg": "#F0F7FF", "main": "#007AFF"},   # 시원한 블루
-    "QA": {"bg": "#F0F9F0", "main": "#34C759"},    # 산뜻한 그린
-    "배포": {"bg": "#FFF0F5", "main": "#FF2D55"},   # 강렬한 핑크
-    "Default": {"bg": "#F8F9FA", "main": "#ADB5BD"}
+    "논의": {"main": "#495057"},   # 그레이
+    "기획": {"main": "#FF9500"},   # 오렌지
+    "디자인": {"main": "#5E5CE6"}, # 퍼플
+    "개발": {"main": "#007AFF"},   # 블루
+    "QA": {"main": "#34C759"},    # 그린
+    "배포": {"main": "#FF2D55"},   # 핑크
+    "Default": {"main": "#ADB5BD"}
 }
 
 try:
@@ -97,20 +103,19 @@ try:
             
             if len(month_data) > 0:
                 for _, row in month_data.iterrows():
-                    # 카테고리에 맞는 색상 테마 선택
                     cat_name = str(row['Category']).strip()
                     theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
                     
                     st.markdown(f"""
-                        <div class="project-card" style="background-color: {theme['bg']};">
-                            <div class="card-project-title" style="color: #1A1A1A;">{row['Project']}</div>
-                            <div class="card-desc" style="color: {theme['main']};">{row['Description']}</div>
-                            <div class="card-manager" style="color: #4A4A4A;">
-                                <span style="background: {theme['main']}; color: white; width: 22px; height: 22px; border-radius: 6px; display: inline-block; margin-right: 8px; text-align: center; line-height: 22px; font-size: 10px;">👤</span>
-                                {row['Manager']}
-                            </div>
+                        <div class="project-card">
+                            <!-- 프로젝트 명에 카테고리 컬러 적용 -->
+                            <div class="card-project-title" style="color: {theme['main']};">{row['Project']}</div>
+                            <!-- 설명에 검정색 적용 -->
+                            <div class="card-desc">{row['Description']}</div>
+                            <!-- 담당자 수정: 아이콘 제거, 폰트 축소, 투명도 70% -->
+                            <div class="card-manager">{row['Manager']}</div>
                             <div class="badge-wrapper">
-                                <div class="badge" style="background-color: white; color: {theme['main']}; border: 1.5px solid {theme['main']}20;">{row['Quarter']}</div>
+                                <div class="badge" style="background-color: {theme['main']}15; color: {theme['main']}; border: 1.5px solid {theme['main']}20;">{row['Quarter']}</div>
                                 <div class="badge" style="background-color: {theme['main']}; color: white;">{row['Status']}</div>
                             </div>
                         </div>
