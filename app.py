@@ -8,13 +8,12 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (상하 여백 긴급 축소)
+# 2. 디자인 CSS
 st.markdown("""
 <style>
     /* [1] 스트림릿 내부 반응형 패딩 및 마진 완전 박멸 */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     
-    /* 모든 캐시 컨테이너 및 블록 패딩 강제 0 */
     [data-testid="stAppViewBlockContainer"], 
     [data-testid="stVerticalBlock"],
     [class*="st-emotion-cache"] {
@@ -32,8 +31,8 @@ st.markdown("""
     /* [2] 고정 규격 설정 */
     :root {
         --side-margin: 60px;
-        --grid-column-gap: 20px; /* 가로 간격 */
-        --grid-row-gap: 8px;     /* 세로 간격 (이 값을 줄여서 촘촘하게 만듭니다) */
+        --grid-column-gap: 20px;
+        --grid-row-gap: 8px;
     }
 
     /* 상단 고정 영역 */
@@ -53,12 +52,12 @@ st.markdown("""
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.2px; }
     .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
 
-    /* 그리드 레이아웃 (세로 간격 row-gap 적용) */
+    /* 그리드 레이아웃 */
     .roadmap-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
         column-gap: var(--grid-column-gap);
-        row-gap: var(--grid-row-gap); /* 카드 사이 상하 여백 조절 */
+        row-gap: var(--grid-row-gap);
         width: 100%;
         box-sizing: border-box;
     }
@@ -76,19 +75,25 @@ st.markdown("""
 
     /* [3] 본문 영역 */
     .main-content-area {
-        margin-top: 155px; /* 헤더 높이 밀착 */
+        margin-top: 155px; /* 헤더 높이만큼 띄움 */
         padding: 0 var(--side-margin) 60px var(--side-margin);
         width: 100%;
         box-sizing: border-box;
     }
 
-    /* 카드 디자인 (마진 제거 후 그리드 갭으로 제어) */
+    /* 필터 영역 스타일 */
+    .filter-section {
+        margin-bottom: 20px;
+        padding: 10px 0;
+    }
+
+    /* 카드 디자인 */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 20px; 
         border: 1px solid rgba(0,0,0,0.05); 
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
-        margin-bottom: 0 !important; /* 상하 마진 제거 */
+        margin-bottom: 0 !important;
         overflow: hidden;
     }
     .project-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -106,6 +111,11 @@ st.markdown("""
 
     .badge-wrapper { display: flex; gap: 4px; margin-top: 4px; }
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
+    
+    /* 필터 멀티셀렉트 커스텀 */
+    div[data-baseweb="select"] {
+        border-radius: 12px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -124,7 +134,7 @@ def load_data():
 df = load_data()
 
 # 4. 상단 고정 영역
-header_html = f"""
+st.markdown(f"""
 <div class="sticky-top-area">
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
     <div class="sub-title">2026 상반기 마일스톤 타임라인</div>
@@ -134,13 +144,35 @@ header_html = f"""
         <div class="month-label">5월</div><div class="month-label">6월</div>
     </div>
 </div>
-"""
-st.markdown(header_html, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# 5. 메인 본문 영역
+# 5. 메인 본문 영역 시작
 if not df.empty:
-    cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
-    for _, row in df.iterrows():
+    # 필터 및 카드를 감싸는 컨테이너 시작
+    st.markdown('<div class="main-content-area">', unsafe_allow_html=True)
+    
+    # --- 필터 섹션 ---
+    # 실제 데이터에서 카테고리 추출
+    available_categories = sorted(df['Category'].unique().tolist())
+    
+    # 필터 위젯 배치 (Streamlit 기본 위젯 사용)
+    selected_categories = st.multiselect(
+        "카테고리 필터",
+        options=available_categories,
+        default=available_categories,
+        placeholder="카테고리를 선택하세요",
+        label_visibility="collapsed" # 레이블 숨김
+    )
+    
+    # 데이터 필터링
+    filtered_df = df[df['Category'].isin(selected_categories)]
+    
+    st.markdown('<div class="filter-section"></div>', unsafe_allow_html=True)
+    
+    # --- 로드맵 카드 그리드 ---
+    st.markdown('<div class="roadmap-grid">', unsafe_allow_html=True)
+    
+    for _, row in filtered_df.iterrows():
         try:
             start, end = int(row['StartMonth']), int(row['EndMonth'])
             span = end - start + 1
@@ -149,7 +181,7 @@ if not df.empty:
             combined_label = f"{cat_name} {status_text}"
             grid_pos = f"grid-column: {start} / span {span};"
             
-            cards_html += (
+            cards_html = (
                 f'<details class="project-card" style="{grid_pos}">'
                 f'<summary><div>'
                 f'<div class="card-project-title">{row["Project"]}</div>'
@@ -160,6 +192,9 @@ if not df.empty:
                 f'<div class="card-manager">{row["Manager"]}</div>'
                 f'</div></details>'
             )
+            st.markdown(cards_html, unsafe_allow_html=True)
         except: continue
-    cards_html += '</div></div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+        
+    st.markdown('</div></div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="main-content-area"><p>데이터를 불러올 수 없습니다.</p></div>', unsafe_allow_html=True)
