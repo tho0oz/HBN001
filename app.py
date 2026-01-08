@@ -8,27 +8,32 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (고정 기능 해결 및 간격 축소)
+# 2. 디자인 CSS (Streamlit 상단 바 제거 및 월 헤더 0px 고정)
 st.markdown("""
 <style>
-    /* 기본 배경 및 사이드바 제거 */
-    [data-testid="stSidebar"] {display: none;}
-    .stApp { background-color: #F2F5F8; }
+    /* [핵심] Streamlit 상단 바와 푸터 강제 숨기기 */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0%; }
+    footer { visibility: hidden; }
+    #MainMenu { visibility: hidden; }
     
-    /* 제목 영역 간격 축소 */
-    .main-title { font-size: 2rem; font-weight: 800; color: #1A1A1A; padding: 10px 0 0 0; letter-spacing: -1.2px; }
+    /* 전체 배경 및 여백 조정 */
+    .stApp { background-color: #F2F5F8; }
+    .main .block-container { padding-top: 30px !important; } /* 상단 여백 확보 */
+
+    /* 제목 영역 */
+    .main-title { font-size: 2rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; }
     .sub-title { color: #6A7683; margin-bottom: 25px; font-weight: 500; font-size: 0.85rem; }
 
-    /* 타임라인 그리드: 상하 간격 축소 */
+    /* 타임라인 그리드 */
     .roadmap-container { 
         display: grid; 
         grid-template-columns: repeat(6, 1fr); 
         gap: 12px; 
         align-items: start;
-        overflow: visible; /* sticky 작동을 위해 필수 */
+        overflow: visible;
     }
 
-    /* 월 헤더 고정 기능 해결 */
+    /* [핵심] 월 헤더 고정: 상단 바가 사라졌으므로 top: 0으로 설정 */
     .month-label { 
         background-color: #FFFFFF; 
         color: #1A1A1A; 
@@ -40,69 +45,35 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
         margin-bottom: 10px;
         
-        /* 고정 설정: 스트림릿 헤더 높이를 고려하여 top 값 조정 */
+        position: -webkit-sticky;
         position: sticky; 
-        top: 45px;      
+        top: 0px;      /* 화면 맨 위에 딱 붙게 설정 */
         z-index: 999;
     }
 
-    /* 카드 디자인 최적화 (사이즈 축소, Radius 18px) */
+    /* 카드 디자인 최적화 (촘촘하게) */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 18px; 
         border: 1px solid rgba(0,0,0,0.05); 
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
-        margin-bottom: 6px; /* 카드 간 상하 간격 촘촘하게 */
+        margin-bottom: 6px; 
         overflow: hidden;
         transition: all 0.2s ease;
     }
+    .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
 
-    .project-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.06);
-    }
-
-    /* 카드 내부 간격 축소 (Padding 24px -> 14px) */
-    summary {
-        list-style: none; 
-        padding: 14px 16px;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+    summary { list-style: none; padding: 14px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     summary::-webkit-details-marker { display: none; }
-
     .card-project-title { font-size: 1rem; font-weight: 800; line-height: 1.2; }
 
-    /* 펼쳤을 때 텍스트 간격 좁게 조정 */
     .card-content { padding: 0 16px 16px 16px; }
-    .card-desc { 
-        font-size: 0.85rem; 
-        line-height: 1.4; 
-        margin: 8px 0; 
-        color: #333; 
-        font-weight: 500; 
-    }
-    .card-manager { 
-        font-size: 0.75rem; 
-        color: #1A1A1A; 
-        opacity: 0.6; 
-        margin: 0; 
-    }
+    .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 8px 0; color: #333; font-weight: 500; }
+    .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
 
-    /* 화살표 사이즈 축소 */
-    .arrow-icon {
-        width: 8px;
-        height: 8px;
-        border-top: 2px solid #BCB8AD;
-        border-right: 2px solid #BCB8AD;
-        transform: rotate(135deg);
-        transition: transform 0.3s ease;
-    }
+    .arrow-icon { width: 8px; height: 8px; border-top: 2px solid #BCB8AD; border-right: 2px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
     details[open] .arrow-icon { transform: rotate(-45deg); border-color: #1A1A1A; }
 
-    /* 뱃지 사이즈 축소 */
     .badge-wrapper { display: flex; gap: 4px; margin-top: 6px; }
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
 </style>
@@ -128,12 +99,9 @@ st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</di
 
 if not df.empty:
     full_html = '<div class="roadmap-container">'
-    
-    # 월 헤더 (Sticky 고정 적용)
     for i in range(1, 7):
         full_html += f'<div class="month-label" style="grid-column: {i};">{i}월</div>'
 
-    # 프로젝트 카드 출력
     for _, row in df.iterrows():
         try:
             start, end = int(row['StartMonth']), int(row['EndMonth'])
@@ -143,13 +111,12 @@ if not df.empty:
             combined_label = f"{cat_name} {status_text}"
             grid_pos = f"grid-column: {start} / span {span};"
             
-            # 촘촘한 간격의 카드 HTML
             card_html = (
                 f'<details class="project-card" style="{grid_pos}">'
                 f'<summary>'
                 f'<div>'
                 f'<div class="card-project-title" style="color: {theme["main"]};">{row["Project"]}</div>'
-                f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1px solid {theme["main"]}30;">{combined_label}</div></div>'
+                f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
                 f'</div>'
                 f'<div class="arrow-icon"></div>'
                 f'</summary>'
@@ -161,6 +128,5 @@ if not df.empty:
             )
             full_html += card_html
         except: continue
-
     full_html += '</div>'
     st.markdown(full_html, unsafe_allow_html=True)
