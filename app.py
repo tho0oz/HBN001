@@ -8,27 +8,32 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 강제 패딩 리셋 및 정렬 CSS
+# 2. 디자인 CSS (상하 여백 긴급 축소)
 st.markdown("""
 <style>
-    /* [1] 스트림릿 내부 반응형 패딩 완전 박멸 */
+    /* [1] 스트림릿 내부 반응형 패딩 및 마진 완전 박멸 */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     
-    /* 사용자께서 찾으신 반응형 패딩 포함, 모든 캐시 컨테이너 패딩 강제 0 */
+    /* 모든 캐시 컨테이너 및 블록 패딩 강제 0 */
     [data-testid="stAppViewBlockContainer"], 
+    [data-testid="stVerticalBlock"],
     [class*="st-emotion-cache"] {
         padding-left: 0 !important;
         padding-right: 0 !important;
         padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         max-width: 100% !important;
     }
     
     .stApp { background-color: #F2F5F8 !important; }
 
-    /* [2] 우리가 직접 제어하는 고정 규격 (px 단위로 강제 일치) */
+    /* [2] 고정 규격 설정 */
     :root {
-        --side-margin: 60px; /* 좌우 여백 고정값 */
-        --grid-gap: 20px;    /* 그리드 간격 고정값 */
+        --side-margin: 60px;
+        --grid-column-gap: 20px; /* 가로 간격 */
+        --grid-row-gap: 8px;     /* 세로 간격 (이 값을 줄여서 촘촘하게 만듭니다) */
     }
 
     /* 상단 고정 영역 */
@@ -48,11 +53,12 @@ st.markdown("""
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.2px; }
     .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
 
-    /* 그리드 레이아웃 (헤더/본문 공통) */
+    /* 그리드 레이아웃 (세로 간격 row-gap 적용) */
     .roadmap-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
-        gap: var(--grid-gap);
+        column-gap: var(--grid-column-gap);
+        row-gap: var(--grid-row-gap); /* 카드 사이 상하 여백 조절 */
         width: 100%;
         box-sizing: border-box;
     }
@@ -68,37 +74,37 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* [3] 본문 영역: 첫 카드 위치 상향 및 여백 고정 */
+    /* [3] 본문 영역 */
     .main-content-area {
-        margin-top: 155px; /* 헤더 높이에 맞춰 카드 위치를 확 올림 */
+        margin-top: 155px; /* 헤더 높이 밀착 */
         padding: 0 var(--side-margin) 60px var(--side-margin);
         width: 100%;
         box-sizing: border-box;
     }
 
-    /* 카드 디자인 */
+    /* 카드 디자인 (마진 제거 후 그리드 갭으로 제어) */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 20px; 
         border: 1px solid rgba(0,0,0,0.05); 
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
-        margin-bottom: 12px; 
+        margin-bottom: 0 !important; /* 상하 마진 제거 */
         overflow: hidden;
     }
-    .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
+    .project-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-    summary { list-style: none; padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    summary { list-style: none; padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     summary::-webkit-details-marker { display: none; }
     
-    .card-project-title { font-size: 1.05rem; font-weight: 800; color: #1A1A1A; }
-    .card-content { padding: 0 20px 20px 20px; }
-    .card-desc { font-size: 0.85rem; line-height: 1.5; margin: 8px 0; color: #333; font-weight: 500; }
+    .card-project-title { font-size: 1rem; font-weight: 800; color: #1A1A1A; }
+    .card-content { padding: 0 18px 18px 18px; }
+    .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 6px 0; color: #333; font-weight: 500; }
     .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
 
-    .arrow-icon { width: 8px; height: 8px; border-top: 2.5px solid #BCB8AD; border-right: 2.5px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
+    .arrow-icon { width: 8px; height: 8px; border-top: 2px solid #BCB8AD; border-right: 2px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
     details[open] .arrow-icon { transform: rotate(-45deg); border-color: #1A1A1A; }
 
-    .badge-wrapper { display: flex; gap: 4px; margin-top: 6px; }
+    .badge-wrapper { display: flex; gap: 4px; margin-top: 4px; }
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
