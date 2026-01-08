@@ -5,7 +5,7 @@ from datetime import datetime
 
 # 1. 환경 설정 및 구글 시트 연동
 # 여기에 복사한 구글 시트 ID를 입력하세요
-SHEET_ID = 'https://docs.google.com/spreadsheets/d/1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
+SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
 st.set_page_config(page_title="Project Dashboard", layout="wide")
