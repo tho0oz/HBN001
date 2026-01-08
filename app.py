@@ -8,7 +8,7 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (정렬 일치 및 구분선 제거)
+# 2. 디자인 CSS (여백 강제 고정 및 정렬 최적화)
 st.markdown("""
 <style>
     /* Streamlit 기본 UI 숨기기 */
@@ -16,10 +16,18 @@ st.markdown("""
     footer { visibility: hidden; }
     #MainMenu { visibility: hidden; }
     
+    /* [핵심] 스트림릿 기본 컨테이너 여백 강제 고정 (Reset) */
+    .main .block-container { 
+        padding-left: 4rem !important; 
+        padding-right: 4rem !important; 
+        padding-top: 2rem !important;
+        max-width: 100% !important;
+    }
+
     /* 전체 배경 */
     .stApp { background-color: #F2F5F8; }
     
-    /* [수정] 상단 고정 영역: 구분선 제거 및 너비 최적화 */
+    /* [핵심] 상단 고정 영역: 본문과 동일한 여백(4rem) 부여 */
     .sticky-top-area {
         position: fixed;
         top: 0;
@@ -29,19 +37,20 @@ st.markdown("""
         background-color: rgba(242, 245, 248, 0.85);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        padding: 2rem 5rem 1rem 5rem; /* 아래쪽 여백 조절 */
-        border-bottom: none; /* 구분선 삭제 */
+        padding: 2rem 4rem 1rem 4rem; /* 본문 패딩과 일치 */
+        border-bottom: none;
+        box-sizing: border-box; /* 패딩이 너비에 포함되도록 설정 */
     }
 
     /* 제목 및 서브제목 */
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; line-height: 1.2; }
     .sub-title { color: #6A7683; margin-bottom: 20px; font-weight: 500; font-size: 0.85rem; }
 
-    /* [수정] 월 헤더 그리드: 하단 로드맵 그리드와 완벽 일치 */
+    /* 월 헤더 그리드 */
     .month-grid-header {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
-        gap: 16px; /* 하단 gap과 통일 */
+        gap: 16px;
         width: 100%;
     }
 
@@ -56,17 +65,16 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* [수정] 메인 콘텐츠 영역: 상단 여백 및 정렬 일치 */
+    /* 메인 콘텐츠 영역: 상단 고정 영역만큼 띄워줌 */
     .main-content-area {
-        margin-top: 190px; /* 고정 영역 높이에 맞춰 정밀 조정 */
-        padding: 0 5rem;
+        margin-top: 170px; /* 고정 영역 높이에 맞춰 조정 */
         width: 100%;
     }
 
     .roadmap-container { 
         display: grid; 
         grid-template-columns: repeat(6, 1fr); 
-        gap: 16px; /* 상단 gap과 통일 */
+        gap: 16px; 
         align-items: start;
         width: 100%;
     }
@@ -96,11 +104,6 @@ st.markdown("""
 
     .badge-wrapper { display: flex; gap: 4px; margin-top: 6px; }
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
-
-    /* 반응형 여백 (화면 너비에 따른 최적화) */
-    @media (max-width: 1200px) {
-        .sticky-top-area, .main-content-area { padding-left: 2rem; padding-right: 2rem; }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -118,7 +121,7 @@ def load_data():
 
 df = load_data()
 
-# 4. 상단 고정 영역 (구분선 제거 및 월 레이블 출력)
+# 4. 상단 고정 영역 (여백 4rem 적용)
 header_html = f"""
 <div class="sticky-top-area">
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
@@ -135,9 +138,8 @@ header_html = f"""
 """
 st.markdown(header_html, unsafe_allow_html=True)
 
-# 5. 메인 콘텐츠 영역 (프로젝트 카드)
+# 5. 메인 콘텐츠 영역 (여백 4rem 적용된 컨테이너 내부)
 if not df.empty:
-    # 촘촘한 정렬을 위해 동일한 grid 구조 사용
     cards_html = '<div class="main-content-area"><div class="roadmap-container">'
     
     for _, row in df.iterrows():
@@ -147,8 +149,6 @@ if not df.empty:
             cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
             theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
             combined_label = f"{cat_name} {status_text}"
-            
-            # CSS Grid column 설정: 월 헤더와 동일한 위치로 고정
             grid_pos = f"grid-column: {start} / span {span};"
             
             cards_html += (
