@@ -8,42 +8,47 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 강력한 레이아웃 초기화 및 정렬 CSS
+# 2. 강제 패딩 리셋 및 정렬 CSS
 st.markdown("""
 <style>
-    /* [핵심] 스트림릿 내부의 모든 기본 여백과 최대 너비 제한 해제 */
-    [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stAppViewBlockContainer"] {
-        padding: 0 !important;
+    /* [1] 스트림릿 내부 반응형 패딩 완전 박멸 */
+    header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
+    
+    /* 사용자께서 찾으신 반응형 패딩 포함, 모든 캐시 컨테이너 패딩 강제 0 */
+    [data-testid="stAppViewBlockContainer"], 
+    [class*="st-emotion-cache"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-top: 0 !important;
         max-width: 100% !important;
-        margin: 0 !important;
     }
+    
     .stApp { background-color: #F2F5F8 !important; }
 
-    /* [공통 규격] 헤더와 본문에 똑같이 적용할 가로 여백 (60px) */
+    /* [2] 우리가 직접 제어하는 고정 규격 (px 단위로 강제 일치) */
     :root {
-        --side-padding: 60px;
-        --grid-gap: 20px;
+        --side-margin: 60px; /* 좌우 여백 고정값 */
+        --grid-gap: 20px;    /* 그리드 간격 고정값 */
     }
 
-    /* [상단 고정 영역] */
+    /* 상단 고정 영역 */
     .sticky-top-area {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
+        right: 0;
         z-index: 1000;
         background-color: rgba(242, 245, 248, 0.9);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        padding: 30px var(--side-padding) 20px var(--side-padding);
+        padding: 30px var(--side-margin) 15px var(--side-margin);
         box-sizing: border-box;
     }
 
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.2px; }
-    .sub-title { color: #6A7683; margin: 5px 0 25px 0; font-weight: 500; font-size: 0.85rem; }
+    .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
 
-    /* [그리드 레이아웃] 헤더와 본문 공통 */
+    /* 그리드 레이아웃 (헤더/본문 공통) */
     .roadmap-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
@@ -55,22 +60,23 @@ st.markdown("""
     .month-label { 
         background-color: #FFFFFF; 
         color: #1A1A1A; 
-        padding: 12px; 
+        padding: 10px; 
         border-radius: 12px; 
         font-weight: 800; 
-        font-size: 0.95rem; 
+        font-size: 0.9rem; 
         text-align: center; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* [본문 영역] 헤더 높이만큼 띄우고 첫 카드 위치 최적화 */
+    /* [3] 본문 영역: 첫 카드 위치 상향 및 여백 고정 */
     .main-content-area {
-        padding: 175px var(--side-padding) 60px var(--side-padding);
+        margin-top: 155px; /* 헤더 높이에 맞춰 카드 위치를 확 올림 */
+        padding: 0 var(--side-margin) 60px var(--side-margin);
         width: 100%;
         box-sizing: border-box;
     }
 
-    /* [카드 디자인] */
+    /* 카드 디자인 */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 20px; 
@@ -78,14 +84,13 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
         margin-bottom: 12px; 
         overflow: hidden;
-        transition: transform 0.2s ease;
     }
     .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
 
     summary { list-style: none; padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     summary::-webkit-details-marker { display: none; }
     
-    .card-project-title { font-size: 1.05rem; font-weight: 800; line-height: 1.2; color: #1A1A1A; }
+    .card-project-title { font-size: 1.05rem; font-weight: 800; color: #1A1A1A; }
     .card-content { padding: 0 20px 20px 20px; }
     .card-desc { font-size: 0.85rem; line-height: 1.5; margin: 8px 0; color: #333; font-weight: 500; }
     .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
@@ -98,7 +103,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 로드 및 설정
+# 3. 데이터 로드
 COLOR_PALETTE = {
     "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
     "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
@@ -112,7 +117,7 @@ def load_data():
 
 df = load_data()
 
-# 4. 상단 고정 영역 렌더링
+# 4. 상단 고정 영역
 header_html = f"""
 <div class="sticky-top-area">
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
@@ -126,10 +131,9 @@ header_html = f"""
 """
 st.markdown(header_html, unsafe_allow_html=True)
 
-# 5. 메인 본문 영역 렌더링
+# 5. 메인 본문 영역
 if not df.empty:
-    cards_html = '<div class="main-content-area"><div class="roadmap-grid" style="align-items: start;">'
-    
+    cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
     for _, row in df.iterrows():
         try:
             start, end = int(row['StartMonth']), int(row['EndMonth'])
@@ -137,8 +141,6 @@ if not df.empty:
             cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
             theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
             combined_label = f"{cat_name} {status_text}"
-            
-            # 카드가 시작 월부터 종료 월까지 걸치도록 그리드 컬럼 설정
             grid_pos = f"grid-column: {start} / span {span};"
             
             cards_html += (
@@ -153,8 +155,5 @@ if not df.empty:
                 f'</div></details>'
             )
         except: continue
-        
     cards_html += '</div></div>'
     st.markdown(cards_html, unsafe_allow_html=True)
-else:
-    st.markdown('<div class="main-content-area">데이터 로딩 중...</div>', unsafe_allow_html=True)
