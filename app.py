@@ -4,27 +4,26 @@ import pandas as pd
 # 1. 페이지 설정
 st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_sidebar_state="collapsed")
 
-# 구글 시트 연동
+# 구글 시트 연동 (ID 확인 필수)
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. CSS 디자인 (가로 스패닝 및 텍스트 스타일 수정)
+# 2. 전역 디자인 CSS
 st.markdown("""
 <style>
-    /* 배경 및 사이드바 제거 */
     [data-testid="stSidebar"] {display: none;}
     .stApp { background-color: #F2F5F8; }
     
-    /* 제목 */
     .main-title { font-size: 2.5rem; font-weight: 800; color: #1A1A1A; padding: 20px 0 5px 0; letter-spacing: -1.5px; }
     .sub-title { color: #6A7683; margin-bottom: 40px; font-weight: 500; font-size: 0.9rem; }
 
     /* 타임라인 그리드 시스템 */
-    .timeline-wrapper {
+    .timeline-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr); /* 6개월 등분 */
         gap: 20px;
         width: 100%;
+        margin-top: 20px;
     }
 
     /* 월 헤더 스타일 */
@@ -37,7 +36,6 @@ st.markdown("""
         font-size: 1rem;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        margin-bottom: 10px;
     }
 
     /* 프로젝트 카드 스타일 (흰색 박스 고정) */
@@ -49,14 +47,17 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         display: flex;
         flex-direction: column;
-        margin-bottom: 20px; /* 카드 간 간격 */
+        margin-bottom: 20px;
+        grid-column-end: span 1; /* 기본값 */
     }
 
-    /* 텍스트 스타일 교체 반영 */
+    /* 프로젝트 명 (카테고리 컬러가 들어갈 자리) */
     .card-project-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+    
+    /* 설명 (진한 검정색) */
     .card-desc { font-size: 0.9rem; line-height: 1.4; margin-bottom: 15px; color: #1A1A1A; font-weight: 500; }
     
-    /* 담당자 및 기간: 폰트 축소, Regular, 투명도 70% */
+    /* 담당자 및 기간: 폰트 축소, Regular, 투명도 70%, 아이콘 없음 */
     .card-info-row { 
         font-size: 0.75rem; 
         font-weight: 400; 
@@ -67,5 +68,77 @@ st.markdown("""
         justify-content: space-between; 
     }
     
-    /* 뱃지 */
-    .badge-wrapper { display: flex; g
+    /* 뱃지 스타일 */
+    .badge-wrapper { display: flex; gap: 6px; }
+    .badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 3. 데이터 로드 및 컬러 설정
+COLOR_PALETTE = {
+    "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
+    "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
+    "Default": {"main": "#ADB5BD"}
+}
+
+@st.cache_data(ttl=10)
+def load_data():
+    try:
+        return pd.read_csv(SHEET_URL)
+    except:
+        return pd.DataFrame()
+
+df = load_data()
+
+# 4. 화면 렌더링
+st.markdown('<div class="main-title">한빛앤 프로덕트 로드맵</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</div>', unsafe_allow_html=True)
+
+if not df.empty:
+    # 월별 헤더 (1월~6월)
+    cols = st.columns(6)
+    for i in range(1, 7):
+        cols[i-1].markdown(f'<div class="month-header">{i}월</div>', unsafe_allow_html=True)
+
+    # 프로젝트 카드 렌더링 (그리드 방식)
+    # 한 장의 st.markdown에 그리드를 담아 렌더링 오류를 방지합니다.
+    timeline_html = '<div class="timeline-grid">'
+    
+    for _, row in df.iterrows():
+        try:
+            start = int(row['StartMonth'])
+            end = int(row['EndMonth'])
+            span = end - start + 1
+            cat_name = str(row['Category']).strip()
+            theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
+            duration = f"{start}월 - {end}월"
+            
+            # CSS Grid의 시작점과 범위를 지정
+            grid_style = f"grid-column: {start} / span {span};"
+            
+            timeline_html += f"""
+            <div class="project-card" style="{grid_style}">
+                <div class="card-project-title" style="color: {theme['main']};">{row['Project']}</div>
+                <div class="card-desc">{row['Description']}</div>
+                <div class="card-info-row">
+                    <span>{row['Manager']}</span>
+                    <span>{duration}</span>
+                </div>
+                <div class="badge-wrapper">
+                    <div class="badge" style="background-color: {theme['main']}15; color: {theme['main']}; border: 1px solid {theme['main']}30;">{cat_name}</div>
+                    <div class="badge" style="background-color: {theme['main']}; color: white;">{row['Status']}</div>
+                </div>
+            </div>
+            """
+        except:
+            continue
+            
+    timeline_html += '</div>'
+    st.markdown(timeline_html, unsafe_allow_html=True)
+else:
+    st.info("구글 시트에서 데이터를 불러오는 중이거나 데이터가 비어있습니다.")
