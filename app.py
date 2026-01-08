@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
-1. 페이지 설정
+
+# 1. 페이지 설정
 st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_sidebar_state="collapsed")
-구글 시트 연동
-SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA'
+
+# 구글 시트 연동
+SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
-2. 디자인 CSS (상하 여백 긴급 축소)
+
+# 2. 디자인 CSS (상하 여백 긴급 축소)
 st.markdown("""
 <style>
     /* [1] 스트림릿 내부 반응형 패딩 및 마진 완전 박멸 */
@@ -105,18 +108,22 @@ st.markdown("""
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
-3. 데이터 로드
+
+# 3. 데이터 로드
 COLOR_PALETTE = {
-"논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
-"개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
-"Default": {"main": "#ADB5BD"}
+    "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
+    "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
+    "Default": {"main": "#ADB5BD"}
 }
+
 @st.cache_data(ttl=5)
 def load_data():
-try: return pd.read_csv(SHEET_URL)
-except: return pd.DataFrame()
+    try: return pd.read_csv(SHEET_URL)
+    except: return pd.DataFrame()
+
 df = load_data()
-4. 상단 고정 영역
+
+# 4. 상단 고정 영역
 header_html = f"""
 <div class="sticky-top-area">
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
@@ -129,30 +136,30 @@ header_html = f"""
 </div>
 """
 st.markdown(header_html, unsafe_allow_html=True)
-5. 메인 본문 영역
+
+# 5. 메인 본문 영역
 if not df.empty:
-cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
-for _, row in df.iterrows():
-try:
-start, end = int(row['StartMonth']), int(row['EndMonth'])
-span = end - start + 1
-cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
-theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
-combined_label = f"{cat_name} {status_text}"
-grid_pos = f"grid-column: {start} / span {span};"
-code
-Code
-cards_html += (
-            f'<details class="project-card" style="{grid_pos}">'
-            f'<summary><div>'
-            f'<div class="card-project-title">{row["Project"]}</div>'
-            f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
-            f'</div><div class="arrow-icon"></div></summary>'
-            f'<div class="card-content">'
-            f'<div class="card-desc">{row["Description"]}</div>'
-            f'<div class="card-manager">{row["Manager"]}</div>'
-            f'</div></details>'
-        )
-    except: continue
-cards_html += '</div></div>'
-st.markdown(cards_html, unsafe_allow_html=True)
+    cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
+    for _, row in df.iterrows():
+        try:
+            start, end = int(row['StartMonth']), int(row['EndMonth'])
+            span = end - start + 1
+            cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
+            theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
+            combined_label = f"{cat_name} {status_text}"
+            grid_pos = f"grid-column: {start} / span {span};"
+            
+            cards_html += (
+                f'<details class="project-card" style="{grid_pos}">'
+                f'<summary><div>'
+                f'<div class="card-project-title">{row["Project"]}</div>'
+                f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
+                f'</div><div class="arrow-icon"></div></summary>'
+                f'<div class="card-content">'
+                f'<div class="card-desc">{row["Description"]}</div>'
+                f'<div class="card-manager">{row["Manager"]}</div>'
+                f'</div></details>'
+            )
+        except: continue
+    cards_html += '</div></div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
