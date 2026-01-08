@@ -8,21 +8,19 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (좌우 여백 강제 일치 및 상하 간격 축소)
+# 2. 디자인 CSS (여백 완전 초기화 및 가로세로 정렬 일치)
 st.markdown("""
 <style>
-    /* [1] 스트림릿 기본 UI 및 여백 완전 초기화 */
-    header[data-testid="stHeader"] { visibility: hidden; height: 0; }
-    footer { visibility: hidden; }
+    /* [1] 스트림릿 내부 레이아웃 완전 초기화 */
+    [data-testid="stHeader"] { display: none; }
     [data-testid="stAppViewBlockContainer"] {
         padding: 0 !important;
         max-width: 100% !important;
+        margin: 0 !important;
     }
-
-    /* 전체 배경 */
     .stApp { background-color: #F2F5F8; }
-    
-    /* [2] 상단 고정 영역: 좌우 여백을 px 단위로 고정 */
+
+    /* [2] 상단 고정 영역: 좌우 여백을 vw(화면 비율) 단위로 설정하여 정밀 일치 */
     .sticky-top-area {
         position: fixed;
         top: 0;
@@ -32,18 +30,18 @@ st.markdown("""
         background-color: rgba(242, 245, 248, 0.85);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        padding: 30px 60px 15px 60px; /* 좌우 60px 고정 */
+        padding: 30px 5vw 15px 5vw; /* 좌우 여백 5vw */
         box-sizing: border-box;
     }
 
-    .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; line-height: 1.2; }
-    .sub-title { color: #6A7683; margin-bottom: 20px; font-weight: 500; font-size: 0.85rem; }
+    .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; margin: 0; letter-spacing: -1.2px; }
+    .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
 
     /* 월 헤더 그리드 */
     .month-grid-header {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
-        gap: 20px;
+        gap: 20px; /* 고정 간격 */
         width: 100%;
     }
 
@@ -58,10 +56,10 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* [3] 메인 콘텐츠 영역: 헤더와 동일한 좌우 여백(60px) 및 상단 간격 축소 */
+    /* [3] 메인 콘텐츠 영역: 헤더와 좌우 여백 및 그리드 간격 100% 일치 */
     .main-content-area {
-        margin-top: 165px; /* 헤더 높이에 맞춰 밀착 조절 */
-        padding: 0 60px 60px 60px; /* 좌우 60px 고정 */
+        margin-top: 155px; /* 첫 카드 위치를 위로 바짝 올림 */
+        padding: 0 5vw 50px 5vw; /* 좌우 여백 5vw로 헤더와 동일하게 설정 */
         width: 100%;
         box-sizing: border-box;
     }
@@ -69,7 +67,7 @@ st.markdown("""
     .roadmap-container { 
         display: grid; 
         grid-template-columns: repeat(6, 1fr); 
-        gap: 20px; 
+        gap: 20px; /* 헤더의 gap과 동일하게 20px 설정 */
         align-items: start;
         width: 100%;
     }
@@ -82,7 +80,7 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
         margin-bottom: 12px; 
         overflow: hidden;
-        transition: all 0.2s ease;
+        transition: transform 0.2s ease;
     }
     .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
 
@@ -122,12 +120,9 @@ header_html = f"""
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
     <div class="sub-title">2026 상반기 마일스톤 타임라인</div>
     <div class="month-grid-header">
-        <div class="month-label">1월</div>
-        <div class="month-label">2월</div>
-        <div class="month-label">3월</div>
-        <div class="month-label">4월</div>
-        <div class="month-label">5월</div>
-        <div class="month-label">6월</div>
+        <div class="month-label">1월</div><div class="month-label">2월</div>
+        <div class="month-label">3월</div><div class="month-label">4월</div>
+        <div class="month-label">5월</div><div class="month-label">6월</div>
     </div>
 </div>
 """
@@ -148,18 +143,14 @@ if not df.empty:
             
             cards_html += (
                 f'<details class="project-card" style="{grid_pos}">'
-                f'<summary>'
-                f'<div>'
+                f'<summary><div>'
                 f'<div class="card-project-title">{row["Project"]}</div>'
                 f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
-                f'</div>'
-                f'<div class="arrow-icon"></div>'
-                f'</summary>'
+                f'</div><div class="arrow-icon"></div></summary>'
                 f'<div class="card-content">'
                 f'<div class="card-desc">{row["Description"]}</div>'
                 f'<div class="card-manager">{row["Manager"]}</div>'
-                f'</div>'
-                f'</details>'
+                f'</div></details>'
             )
         except: continue
         
