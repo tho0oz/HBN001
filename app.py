@@ -8,7 +8,7 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS
+# 2. 디자인 CSS (상단 고정 + 블러 효과)
 st.markdown("""
 <style>
     /* Streamlit 기본 UI 숨기기 */
@@ -16,27 +16,34 @@ st.markdown("""
     footer { visibility: hidden; }
     #MainMenu { visibility: hidden; }
     
-    /* 전체 배경 및 여백 최적화 */
+    /* 전체 배경 */
     .stApp { background-color: #F2F5F8; }
-    .main .block-container { 
-        padding-top: 1.5rem !important; /* 상단 여백 대폭 축소 */
-        padding-bottom: 0rem !important;
+    
+    /* [핵심] 상단 고정 영역 (Title + Subtitle + Months) */
+    .sticky-top-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background-color: rgba(242, 245, 248, 0.8); /* 반투명 배경색 */
+        backdrop-filter: blur(12px); /* 블러 처리 효과 */
+        -webkit-backdrop-filter: blur(12px);
+        padding: 1.5rem 5rem 10px 5rem; /* 좌우 여백은 Streamlit 기본 여백에 맞춤 */
+        border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
-    /* 제목 영역 */
+    /* 제목 및 서브제목 */
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; }
-    .sub-title { color: #6A7683; margin-bottom: 20px; font-weight: 500; font-size: 0.8rem; }
+    .sub-title { color: #6A7683; margin-bottom: 15px; font-weight: 500; font-size: 0.8rem; }
 
-    /* 타임라인 그리드 컨테이너 */
-    .roadmap-container { 
-        display: grid; 
-        grid-template-columns: repeat(6, 1fr); 
-        gap: 12px; 
-        align-items: start;
-        position: relative;
+    /* 월 헤더 그리드 (고정 영역 내부) */
+    .month-grid-header {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
     }
 
-    /* 월 헤더 고정 및 그라데이션 영역 */
     .month-label { 
         background-color: #FFFFFF; 
         color: #1A1A1A; 
@@ -46,28 +53,22 @@ st.markdown("""
         font-size: 0.9rem; 
         text-align: center; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-        
-        /* 고정 위치 및 상하 여백 */
-        position: sticky; 
-        top: 15px;      /* 상단 여백 */
-        margin-bottom: 15px; /* 하단 여백 */
-        z-index: 999;
     }
 
-    /* 헤더 뒤쪽 그라데이션 페이드 효과 */
-    .roadmap-container::before {
-        content: "";
-        position: sticky;
-        top: 0;
-        grid-column: 1 / span 6;
-        height: 60px; /* 그라데이션 높이 */
-        background: linear-gradient(to bottom, #F2F5F8 60%, rgba(242,245,248,0) 100%);
-        z-index: 998;
-        margin-bottom: -60px; /* 레이아웃 영향 방지 */
-        pointer-events: none;
+    /* 메인 콘텐츠 영역 (고정 영역 높이만큼 띄워줌) */
+    .main-content-area {
+        margin-top: 170px; /* 고정 영역의 높이에 맞춰 조정 */
+        padding: 0 5rem;
     }
 
-    /* 카드 디자인 (흰색 박스, 촘촘한 간격) */
+    .roadmap-container { 
+        display: grid; 
+        grid-template-columns: repeat(6, 1fr); 
+        gap: 12px; 
+        align-items: start;
+    }
+
+    /* 카드 디자인 (흰색 박스) */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 18px; 
@@ -82,9 +83,7 @@ st.markdown("""
     summary { list-style: none; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     summary::-webkit-details-marker { display: none; }
     
-    /* 프로젝트 타이틀 (검정색 고정) */
     .card-project-title { font-size: 1rem; font-weight: 800; line-height: 1.2; color: #1A1A1A; }
-
     .card-content { padding: 0 16px 16px 16px; }
     .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 6px 0; color: #333; font-weight: 500; }
     .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
@@ -94,6 +93,11 @@ st.markdown("""
 
     .badge-wrapper { display: flex; gap: 4px; margin-top: 6px; }
     .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
+
+    /* 화면 폭에 따른 좌우 여백 조정 (반응형) */
+    @media (max-width: 1200px) {
+        .sticky-top-area, .main-content-area { padding-left: 1rem; padding-right: 1rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -111,18 +115,27 @@ def load_data():
 
 df = load_data()
 
-# 4. 화면 출력
-st.markdown('<div class="main-title">한빛앤 프로덕트 로드맵</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</div>', unsafe_allow_html=True)
+# 4. 상단 고정 영역 출력 (Title + Subtitle + Month Labels)
+header_html = f"""
+<div class="sticky-top-area">
+    <div class="main-title">한빛앤 프로덕트 로드맵</div>
+    <div class="sub-title">2026 상반기 마일스톤 타임라인</div>
+    <div class="month-grid-header">
+        <div class="month-label">1월</div>
+        <div class="month-label">2월</div>
+        <div class="month-label">3월</div>
+        <div class="month-label">4월</div>
+        <div class="month-label">5월</div>
+        <div class="month-label">6월</div>
+    </div>
+</div>
+"""
+st.markdown(header_html, unsafe_allow_html=True)
 
+# 5. 메인 콘텐츠 영역 (프로젝트 카드)
 if not df.empty:
-    full_html = '<div class="roadmap-container">'
+    cards_html = '<div class="main-content-area"><div class="roadmap-container">'
     
-    # 1월~6월 고정 헤더
-    for i in range(1, 7):
-        full_html += f'<div class="month-label" style="grid-column: {i};">{i}월</div>'
-
-    # 카드 출력 (타이틀 검정색)
     for _, row in df.iterrows():
         try:
             start, end = int(row['StartMonth']), int(row['EndMonth'])
@@ -132,7 +145,7 @@ if not df.empty:
             combined_label = f"{cat_name} {status_text}"
             grid_pos = f"grid-column: {start} / span {span};"
             
-            card_html = (
+            cards_html += (
                 f'<details class="project-card" style="{grid_pos}">'
                 f'<summary>'
                 f'<div>'
@@ -147,7 +160,9 @@ if not df.empty:
                 f'</div>'
                 f'</details>'
             )
-            full_html += card_html
         except: continue
-    full_html += '</div>'
-    st.markdown(full_html, unsafe_allow_html=True)
+        
+    cards_html += '</div></div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
+else:
+    st.markdown('<div class="main-content-area">데이터를 불러오는 중이거나 시트가 비어있습니다.</div>', unsafe_allow_html=True)
