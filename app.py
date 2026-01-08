@@ -8,32 +8,35 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (Streamlit 상단 바 제거 및 월 헤더 0px 고정)
+# 2. 디자인 CSS
 st.markdown("""
 <style>
-    /* [핵심] Streamlit 상단 바와 푸터 강제 숨기기 */
+    /* Streamlit 기본 UI 숨기기 */
     header[data-testid="stHeader"] { visibility: hidden; height: 0%; }
     footer { visibility: hidden; }
     #MainMenu { visibility: hidden; }
     
-    /* 전체 배경 및 여백 조정 */
+    /* 전체 배경 및 여백 최적화 */
     .stApp { background-color: #F2F5F8; }
-    .main .block-container { padding-top: 30px !important; } /* 상단 여백 확보 */
+    .main .block-container { 
+        padding-top: 1.5rem !important; /* 상단 여백 대폭 축소 */
+        padding-bottom: 0rem !important;
+    }
 
     /* 제목 영역 */
-    .main-title { font-size: 2rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; }
-    .sub-title { color: #6A7683; margin-bottom: 25px; font-weight: 500; font-size: 0.85rem; }
+    .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; }
+    .sub-title { color: #6A7683; margin-bottom: 20px; font-weight: 500; font-size: 0.8rem; }
 
-    /* 타임라인 그리드 */
+    /* 타임라인 그리드 컨테이너 */
     .roadmap-container { 
         display: grid; 
         grid-template-columns: repeat(6, 1fr); 
         gap: 12px; 
         align-items: start;
-        overflow: visible;
+        position: relative;
     }
 
-    /* [핵심] 월 헤더 고정: 상단 바가 사라졌으므로 top: 0으로 설정 */
+    /* 월 헤더 고정 및 그라데이션 영역 */
     .month-label { 
         background-color: #FFFFFF; 
         color: #1A1A1A; 
@@ -43,15 +46,28 @@ st.markdown("""
         font-size: 0.9rem; 
         text-align: center; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-        margin-bottom: 10px;
         
-        position: -webkit-sticky;
+        /* 고정 위치 및 상하 여백 */
         position: sticky; 
-        top: 0px;      /* 화면 맨 위에 딱 붙게 설정 */
+        top: 15px;      /* 상단 여백 */
+        margin-bottom: 15px; /* 하단 여백 */
         z-index: 999;
     }
 
-    /* 카드 디자인 최적화 (촘촘하게) */
+    /* 헤더 뒤쪽 그라데이션 페이드 효과 */
+    .roadmap-container::before {
+        content: "";
+        position: sticky;
+        top: 0;
+        grid-column: 1 / span 6;
+        height: 60px; /* 그라데이션 높이 */
+        background: linear-gradient(to bottom, #F2F5F8 60%, rgba(242,245,248,0) 100%);
+        z-index: 998;
+        margin-bottom: -60px; /* 레이아웃 영향 방지 */
+        pointer-events: none;
+    }
+
+    /* 카드 디자인 (흰색 박스, 촘촘한 간격) */
     .project-card { 
         background-color: #FFFFFF !important; 
         border-radius: 18px; 
@@ -63,12 +79,14 @@ st.markdown("""
     }
     .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
 
-    summary { list-style: none; padding: 14px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    summary { list-style: none; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     summary::-webkit-details-marker { display: none; }
-    .card-project-title { font-size: 1rem; font-weight: 800; line-height: 1.2; }
+    
+    /* 프로젝트 타이틀 (검정색 고정) */
+    .card-project-title { font-size: 1rem; font-weight: 800; line-height: 1.2; color: #1A1A1A; }
 
     .card-content { padding: 0 16px 16px 16px; }
-    .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 8px 0; color: #333; font-weight: 500; }
+    .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 6px 0; color: #333; font-weight: 500; }
     .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
 
     .arrow-icon { width: 8px; height: 8px; border-top: 2px solid #BCB8AD; border-right: 2px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
@@ -79,7 +97,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 로드
+# 3. 데이터 로드 및 컬러 설정
 COLOR_PALETTE = {
     "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
     "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
@@ -99,9 +117,12 @@ st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</di
 
 if not df.empty:
     full_html = '<div class="roadmap-container">'
+    
+    # 1월~6월 고정 헤더
     for i in range(1, 7):
         full_html += f'<div class="month-label" style="grid-column: {i};">{i}월</div>'
 
+    # 카드 출력 (타이틀 검정색)
     for _, row in df.iterrows():
         try:
             start, end = int(row['StartMonth']), int(row['EndMonth'])
@@ -115,7 +136,7 @@ if not df.empty:
                 f'<details class="project-card" style="{grid_pos}">'
                 f'<summary>'
                 f'<div>'
-                f'<div class="card-project-title" style="color: {theme["main"]};">{row["Project"]}</div>'
+                f'<div class="card-project-title">{row["Project"]}</div>'
                 f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
                 f'</div>'
                 f'<div class="arrow-icon"></div>'
