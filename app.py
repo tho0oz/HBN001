@@ -8,26 +8,21 @@ st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_side
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (여백 강제 고정 및 정렬 최적화)
+# 2. 디자인 CSS (좌우 여백 강제 일치 및 상하 간격 축소)
 st.markdown("""
 <style>
-    /* Streamlit 기본 UI 숨기기 */
-    header[data-testid="stHeader"] { visibility: hidden; height: 0%; }
+    /* [1] 스트림릿 기본 UI 및 여백 완전 초기화 */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0; }
     footer { visibility: hidden; }
-    #MainMenu { visibility: hidden; }
-    
-    /* [핵심] 스트림릿 기본 컨테이너 여백 강제 고정 (Reset) */
-    .main .block-container { 
-        padding-left: 4rem !important; 
-        padding-right: 4rem !important; 
-        padding-top: 2rem !important;
+    [data-testid="stAppViewBlockContainer"] {
+        padding: 0 !important;
         max-width: 100% !important;
     }
 
     /* 전체 배경 */
     .stApp { background-color: #F2F5F8; }
     
-    /* [핵심] 상단 고정 영역: 본문과 동일한 여백(4rem) 부여 */
+    /* [2] 상단 고정 영역: 좌우 여백을 px 단위로 고정 */
     .sticky-top-area {
         position: fixed;
         top: 0;
@@ -37,12 +32,10 @@ st.markdown("""
         background-color: rgba(242, 245, 248, 0.85);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        padding: 2rem 4rem 1rem 4rem; /* 본문 패딩과 일치 */
-        border-bottom: none;
-        box-sizing: border-box; /* 패딩이 너비에 포함되도록 설정 */
+        padding: 30px 60px 15px 60px; /* 좌우 60px 고정 */
+        box-sizing: border-box;
     }
 
-    /* 제목 및 서브제목 */
     .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; padding: 0; letter-spacing: -1.2px; line-height: 1.2; }
     .sub-title { color: #6A7683; margin-bottom: 20px; font-weight: 500; font-size: 0.85rem; }
 
@@ -50,7 +43,7 @@ st.markdown("""
     .month-grid-header {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
-        gap: 16px;
+        gap: 20px;
         width: 100%;
     }
 
@@ -65,16 +58,18 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* 메인 콘텐츠 영역: 상단 고정 영역만큼 띄워줌 */
+    /* [3] 메인 콘텐츠 영역: 헤더와 동일한 좌우 여백(60px) 및 상단 간격 축소 */
     .main-content-area {
-        margin-top: 170px; /* 고정 영역 높이에 맞춰 조정 */
+        margin-top: 165px; /* 헤더 높이에 맞춰 밀착 조절 */
+        padding: 0 60px 60px 60px; /* 좌우 60px 고정 */
         width: 100%;
+        box-sizing: border-box;
     }
 
     .roadmap-container { 
         display: grid; 
         grid-template-columns: repeat(6, 1fr); 
-        gap: 16px; 
+        gap: 20px; 
         align-items: start;
         width: 100%;
     }
@@ -107,7 +102,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 로드
+# 3. 데이터 로드 및 컬러 설정
 COLOR_PALETTE = {
     "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
     "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
@@ -121,7 +116,7 @@ def load_data():
 
 df = load_data()
 
-# 4. 상단 고정 영역 (여백 4rem 적용)
+# 4. 상단 고정 영역
 header_html = f"""
 <div class="sticky-top-area">
     <div class="main-title">한빛앤 프로덕트 로드맵</div>
@@ -138,7 +133,7 @@ header_html = f"""
 """
 st.markdown(header_html, unsafe_allow_html=True)
 
-# 5. 메인 콘텐츠 영역 (여백 4rem 적용된 컨테이너 내부)
+# 5. 메인 콘텐츠 영역
 if not df.empty:
     cards_html = '<div class="main-content-area"><div class="roadmap-container">'
     
