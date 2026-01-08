@@ -4,111 +4,110 @@ import pandas as pd
 # 1. 페이지 설정
 st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_sidebar_state="collapsed")
 
-# [상태 관리] 선택된 월 저장
-if 'selected_month' not in st.session_state:
-    st.session_state.selected_month = None
-
 # 구글 시트 연동
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (고밀도 여백 + 수직 높이 동기화 + 상단 정렬)
-st.markdown("""<style>
+# 2. 강제 패딩 리셋 및 정렬 CSS
+st.markdown("""
+<style>
+    /* [1] 스트림릿 내부 반응형 패딩 완전 박멸 */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
-    footer { display: none !important; }
-
-    /* [사용자 제공 패딩 로직] */
-    .st-emotion-cache-zy6yx3 {
-        width: 100% !important;
-        max-width: initial !important;
-        min-width: auto !important;
-        padding-top: 2rem !important;
+    
+    /* 사용자께서 찾으신 반응형 패딩 포함, 모든 캐시 컨테이너 패딩 강제 0 */
+    [data-testid="stAppViewBlockContainer"], 
+    [class*="st-emotion-cache"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-top: 0 !important;
+        max-width: 100% !important;
     }
-    @media (min-width: calc(736px + 8rem)) {
-        .st-emotion-cache-zy6yx3 {
-            padding-left: 3.2rem !important;
-            padding-right: 3.2rem !important;
-        }
-    }
-
+    
     .stApp { background-color: #F2F5F8 !important; }
 
-    /* 헤더 스타일 */
-    .static-header { width: 100%; padding: 20px 0 20px 0; }
-    .main-title { font-size: 2rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.5px; }
-    .sub-title { color: #6A7683; margin: 8px 0 0 0; font-weight: 500; font-size: 0.9rem; }
-
-    /* [수정] 월 버튼 사이드바 고정 및 높이 동기화 */
-    .sticky-sidebar {
-        position: -webkit-sticky;
-        position: sticky;
-        top: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px; /* 카드 그리드 gap과 일치 */
-        z-index: 99;
+    /* [2] 우리가 직접 제어하는 고정 규격 (px 단위로 강제 일치) */
+    :root {
+        --side-margin: 60px; /* 좌우 여백 고정값 */
+        --grid-gap: 20px;    /* 그리드 간격 고정값 */
     }
 
-    /* [수정] 월 버튼: 높이를 1개월 카드 높이(110px)와 동일하게 설정 */
-    div.stButton > button {
-        background-color: #FFFFFF !important;
-        color: #1A1A1A !important;
-        border: 1px solid rgba(0,0,0,0.05) !important;
-        border-radius: 14px !important;
-        padding: 0 !important;
-        font-weight: 800 !important;
-        font-size: 1.1rem !important;
-        width: 80px !important;
-        height: 110px !important; /* 1개월 카드 높이와 동일 */
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
-        transition: all 0.2s ease !important;
-    }
-    div.stButton > button:hover {
-        transform: translateY(-3px) !important;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.06) !important;
-    }
-
-    /* [수정] 카드 그리드: 높이 규격화 (110px) */
-    .roadmap-content-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 320px);
-        grid-auto-rows: 110px; /* 월 버튼 높이와 일치 */
-        gap: 15px;
-        align-items: start;
-    }
-
-    /* [수정] 프로젝트 카드: 내부 여백 최소화 및 상단 정렬 */
-    .project-card { 
-        width: 320px !important;
-        background-color: #FFFFFF !important; 
-        border-radius: 22px; 
-        border: 1px solid rgba(0,0,0,0.05); 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
-        padding: 12px 16px !important; /* 여백 최소화 */
-        transition: all 0.2s ease;
-        height: calc(100% - 2px);
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start !important; /* 상단 정렬 */
+    /* 상단 고정 영역 */
+    .sticky-top-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background-color: rgba(242, 245, 248, 0.9);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        padding: 30px var(--side-margin) 15px var(--side-margin);
         box-sizing: border-box;
     }
-    .project-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
 
-    .card-project-title { 
-        font-size: 1rem; 
-        font-weight: 800; 
-        color: #1A1A1A; 
-        margin-bottom: 6px; 
-        line-height: 1.3;
-        text-align: left;
+    .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.2px; }
+    .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
+
+    /* 그리드 레이아웃 (헤더/본문 공통) */
+    .roadmap-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: var(--grid-gap);
+        width: 100%;
+        box-sizing: border-box;
     }
-    .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; display: inline-block; }
-</style>""", unsafe_allow_html=True)
+
+    .month-label { 
+        background-color: #FFFFFF; 
+        color: #1A1A1A; 
+        padding: 10px; 
+        border-radius: 12px; 
+        font-weight: 800; 
+        font-size: 0.9rem; 
+        text-align: center; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    }
+
+    /* [3] 본문 영역: 첫 카드 위치 상향 및 여백 고정 */
+    .main-content-area {
+        margin-top: 155px; /* 헤더 높이에 맞춰 카드 위치를 확 올림 */
+        padding: 0 var(--side-margin) 60px var(--side-margin);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* 카드 디자인 */
+    .project-card { 
+        background-color: #FFFFFF !important; 
+        border-radius: 20px; 
+        border: 1px solid rgba(0,0,0,0.05); 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
+        margin-bottom: 12px; 
+        overflow: hidden;
+    }
+    .project-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
+
+    summary { list-style: none; padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    summary::-webkit-details-marker { display: none; }
+    
+    .card-project-title { font-size: 1.05rem; font-weight: 800; color: #1A1A1A; }
+    .card-content { padding: 0 20px 20px 20px; }
+    .card-desc { font-size: 0.85rem; line-height: 1.5; margin: 8px 0; color: #333; font-weight: 500; }
+    .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
+
+    .arrow-icon { width: 8px; height: 8px; border-top: 2.5px solid #BCB8AD; border-right: 2.5px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
+    details[open] .arrow-icon { transform: rotate(-45deg); border-color: #1A1A1A; }
+
+    .badge-wrapper { display: flex; gap: 4px; margin-top: 6px; }
+    .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
+</style>
+""", unsafe_allow_html=True)
 
 # 3. 데이터 로드
 COLOR_PALETTE = {
-    "논의": "#495057", "기획": "#FF9500", "디자인": "#5E5CE6",
-    "개발": "#007AFF", "QA": "#34C759", "배포": "#FF2D55", "Default": "#ADB5BD"
+    "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
+    "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
+    "Default": {"main": "#ADB5BD"}
 }
 
 @st.cache_data(ttl=5)
@@ -118,60 +117,43 @@ def load_data():
 
 df = load_data()
 
-# 4. 화면 출력
-if st.session_state.selected_month is None:
-    st.markdown('<div class="static-header"><div class="main-title">한빛앤 프로덕트 로드맵</div><div class="sub-title">2026 상반기 마일스톤 타임라인</div></div>', unsafe_allow_html=True)
-else:
-    if st.button("전체보기"):
-        st.session_state.selected_month = None
-        st.rerun()
+# 4. 상단 고정 영역
+header_html = f"""
+<div class="sticky-top-area">
+    <div class="main-title">한빛앤 프로덕트 로드맵</div>
+    <div class="sub-title">2026 상반기 마일스톤 타임라인</div>
+    <div class="roadmap-grid">
+        <div class="month-label">1월</div><div class="month-label">2월</div>
+        <div class="month-label">3월</div><div class="month-label">4월</div>
+        <div class="month-label">5월</div><div class="month-label">6월</div>
+    </div>
+</div>
+"""
+st.markdown(header_html, unsafe_allow_html=True)
 
-# 5. 콘텐츠 렌더링
+# 5. 메인 본문 영역
 if not df.empty:
-    if st.session_state.selected_month is None:
-        col_side, col_main = st.columns([1, 12])
-        
-        with col_side:
-            st.write('<div class="sticky-sidebar">', unsafe_allow_html=True)
-            for m in range(1, 7):
-                if st.button(f"{m}월", key=f"btn_{m}"):
-                    st.session_state.selected_month = m
-                    st.rerun()
-            st.write('</div>', unsafe_allow_html=True)
+    cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
+    for _, row in df.iterrows():
+        try:
+            start, end = int(row['StartMonth']), int(row['EndMonth'])
+            span = end - start + 1
+            cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
+            theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
+            combined_label = f"{cat_name} {status_text}"
+            grid_pos = f"grid-column: {start} / span {span};"
             
-        with col_main:
-            card_grid_html = '<div class="roadmap-content-grid">'
-            for _, row in df.iterrows():
-                try:
-                    start, end = int(row['StartMonth']), int(row['EndMonth'])
-                    span = end - start + 1
-                    cat = str(row['Category']).strip()
-                    color = COLOR_PALETTE.get(cat, COLOR_PALETTE["Default"])
-                    
-                    # 수직 스패닝 (StartMonth 위치에서 Span만큼)
-                    grid_row_style = f"grid-row: {start} / span {span};"
-                    
-                    card_grid_html += f'''
-                    <div class="project-card" style="{grid_row_style}">
-                        <div class="card-project-title">{row['Project']}</div>
-                        <div><div class="badge" style="background-color: {color}15; color: {color}; border: 1.5px solid {color}30;">{cat} {row['Status']}</div></div>
-                    </div>'''
-                except: continue
-            card_grid_html += '</div>'
-            st.markdown(card_grid_html, unsafe_allow_html=True)
-
-    else:
-        m = st.session_state.selected_month
-        st.markdown(f'<div style="font-size: 2rem; font-weight: 800; margin-bottom: 25px;">{m}월</div>', unsafe_allow_html=True)
-        month_tasks = df[(df['StartMonth'] <= m) & (df['EndMonth'] >= m)]
-        if not month_tasks.empty:
-            for _, row in month_tasks.iterrows():
-                cat = str(row['Category']).strip()
-                color = COLOR_PALETTE.get(cat, COLOR_PALETTE["Default"])
-                st.markdown(f'''
-                <div class="project-card" style="height: auto; margin-bottom: 15px; width: 100% !important;">
-                    <div class="card-project-title">{row['Project']}</div>
-                    <div><div class="badge" style="background-color: {color}15; color: {color}; border: 1.5px solid {color}30;">{cat} {row['Status']}</div></div>
-                </div>''', unsafe_allow_html=True)
-else:
-    st.info("데이터 로딩 중...")
+            cards_html += (
+                f'<details class="project-card" style="{grid_pos}">'
+                f'<summary><div>'
+                f'<div class="card-project-title">{row["Project"]}</div>'
+                f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
+                f'</div><div class="arrow-icon"></div></summary>'
+                f'<div class="card-content">'
+                f'<div class="card-desc">{row["Description"]}</div>'
+                f'<div class="card-manager">{row["Manager"]}</div>'
+                f'</div></details>'
+            )
+        except: continue
+    cards_html += '</div></div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
