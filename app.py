@@ -4,7 +4,7 @@ import pandas as pd
 # 1. 페이지 설정
 st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_sidebar_state="collapsed")
 
-# 구글 시트 연동
+# 구글 시트 연동 (ID 확인 필수)
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
@@ -49,11 +49,11 @@ st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</di
 if not df.empty:
     full_html = '<div class="roadmap-container">'
     
-    # 월 헤더 추가
+    # 1월부터 6월까지 헤더 생성
     for i in range(1, 7):
         full_html += f'<div class="month-label" style="grid-column: {i};">{i}월</div>'
 
-    # 프로젝트 카드 추가
+    # 프로젝트 카드 리스트 생성
     for _, row in df.iterrows():
         try:
             start = int(row['StartMonth'])
@@ -63,19 +63,20 @@ if not df.empty:
             status_text = str(row['Status']).strip()
             theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
             
-            # 통합 뱃지 텍스트 생성 (예: 개발 진행중)
-            combined_status = f"{cat_name} {status_text}"
+            # 통합 뱃지 (카테고리 + 상태)
+            combined_label = f"{cat_name} {status_text}"
             
+            # 가로 길이 결정
             grid_pos = f"grid-column: {start} / span {span};"
             
-            # 카드 HTML 생성 (기간 텍스트 제거 및 뱃지 통합)
+            # 카드 HTML (불필요한 공백 제거)
             card_html = (
                 f'<div class="project-card" style="{grid_pos}">'
                 f'<div class="card-project-title" style="color: {theme["main"]};">{row["Project"]}</div>'
                 f'<div class="card-desc">{row["Description"]}</div>'
                 f'<div class="card-manager">{row["Manager"]}</div>'
                 f'<div class="badge-wrapper">'
-                f'<div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_status}</div>'
+                f'<div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div>'
                 f'</div></div>'
             )
             full_html += card_html
