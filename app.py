@@ -1,136 +1,108 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# 1. 페이지 설정 및 디자인 (화이트 배경 + 알록달록 카드)
-st.set_page_config(page_title="Project Scheduler", layout="wide")
+# 1. 페이지 설정 (사이드바 제거 및 레이아웃 확장)
+st.set_page_config(page_title="2026 Roadmap", layout="wide", initial_sidebar_state="collapsed")
 
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# CSS: 화이트 배경과 알록달록한 카드 스타일링
+# CSS: 사이드바 숨기기 및 알록달록 카드 디자인
 st.markdown("""
     <style>
-    /* 전체 배경을 흰색으로 */
-    .stApp {
-        background-color: #FFFFFF;
-    }
-    /* 사이드바 - 다크 스타일 */
-    section[data-testid="stSidebar"] {
-        background-color: #111111 !important;
-    }
-    section[data-testid="stSidebar"] * {
-        color: #ffffff !important;
-    }
-    /* 캘린더 카드 공통 스타일 */
-    .calendar-card {
-        border-radius: 18px;
-        padding: 18px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        border: none;
-        transition: transform 0.2s;
-    }
-    .calendar-card:hover {
-        transform: translateY(-3px);
-    }
-    .card-time {
-        font-size: 0.75rem;
-        font-weight: 600;
-        margin-bottom: 8px;
-        opacity: 0.8;
-    }
-    .card-project {
-        font-size: 0.8rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        margin-bottom: 4px;
-    }
-    .card-title {
-        font-weight: 700;
-        font-size: 1.05rem;
-        line-height: 1.3;
-        margin-bottom: 10px;
-    }
-    /* 요일 헤더 */
-    .day-header {
-        text-align: center;
-        padding: 15px 0;
+    /* 사이드바 완전히 제거 */
+    [data-testid="stSidebar"] {display: none;}
+    [data-testid="stSidebarNav"] {display: none;}
+    .stApp {background-color: #FFFFFF;}
+    
+    /* 카드 디자인 */
+    .project-card {
+        background-color: #fcfcfc;
+        border-radius: 20px;
+        padding: 20px;
         margin-bottom: 20px;
-        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
     }
-    .day-name { font-size: 0.7rem; font-weight: 700; color: #999; }
-    .day-date { font-size: 1.2rem; font-weight: 800; color: #222; }
+    .title-text { font-size: 1.25rem; font-weight: 800; color: #111; margin-bottom: 5px; }
+    .desc-text { font-size: 0.9rem; color: #666; margin-bottom: 15px; line-height: 1.4; }
+    .manager-text { font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 15px; display: flex; align-items: center; }
+    
+    /* 뱃지 스타일 */
+    .badge-container { display: flex; gap: 8px; }
+    .badge {
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .badge-q { background-color: #111; color: white; } /* 분기 뱃지 */
+    .badge-status { background-color: #E0E0E0; color: #444; } /* 상태 뱃지 기본 */
+    
+    /* 월 헤더 */
+    .month-header {
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin: 40px 0 20px 0;
+        border-bottom: 3px solid #111;
+        display: inline-block;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 데이터 로드 함수
+# 2. 데이터 불러오기
 @st.cache_data(ttl=30)
 def load_data():
     df = pd.read_csv(SHEET_URL)
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    df['Date'] = pd.to_datetime(df['Date'])
     return df
 
-# 카테고리별 색상 매핑 (이미지의 파스텔/비비드 톤)
-COLOR_MAP = {
-    "Design": {"bg": "#FFE5F1", "text": "#FF3DAB"},   # 핑크
-    "Dev": {"bg": "#E5F0FF", "text": "#007AFF"},      # 블루
-    "Planning": {"bg": "#FFF4D1", "text": "#FFAB00"}, # 옐로우
-    "Meeting": {"bg": "#E8F9EE", "text": "#00C752"},  # 그린
-    "Urgent": {"bg": "#F4EEFF", "text": "#7000FF"}    # 퍼플
+# 카테고리별 강조 색상 (카드 왼쪽 선 포인트)
+CATEGORY_COLORS = {
+    "Design": "#FF3DAB", "Dev": "#007AFF", "Planning": "#FFAB00", "Meeting": "#00C752", "Urgent": "#7000FF"
 }
 
 try:
     df = load_data()
     
-    # 사이드바
-    st.sidebar.markdown("<h2 style='color:white;'>intelly</h2>", unsafe_allow_html=True)
-    st.sidebar.write("")
-    menu = st.sidebar.radio("Menu", ["📊 Dashboard", "📅 Schedule", "📋 Projects"])
-    st.sidebar.markdown("---")
-    all_projects = df['Project'].unique()
-    selected_projects = st.sidebar.multiselect("Filter Projects", all_projects, default=all_projects)
+    st.markdown("<h1 style='text-align: center; font-size: 3rem;'>2026 First Half Roadmap</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888;'>January - June Project Overview</p>", unsafe_allow_html=True)
 
-    # 헤더
-    st.markdown(f"<h1 style='color:#111; font-size:2.5rem;'>Stay up to date, Admin</h1>", unsafe_allow_html=True)
+    # 1월부터 6월까지 반복
+    months = ["January", "February", "March", "April", "May", "June"]
     
-    # 상단 날짜 선택 (이번 주 기준)
-    today = datetime.now().date()
-    start_of_week = today - timedelta(days=today.weekday())
-    
-    # 주간 레이아웃 (5컬럼)
-    cols = st.columns(5)
-    day_labels = ["MON", "TUE", "WED", "THU", "FRI"]
-
-    for i in range(5):
-        target_date = start_of_week + timedelta(days=i)
-        with cols[i]:
-            # 오늘 날짜 강조
-            bg_style = "background-color: #000; color: #fff;" if target_date == today else "background-color: transparent;"
-            date_color = "color: #fff;" if target_date == today else "color: #222;"
-            
-            st.markdown(f"""
-                <div class="day-header" style="{bg_style}">
-                    <div class="day-name">{day_labels[i]}</div>
-                    <div class="day-date" style="{date_color}">{target_date.strftime('%d/%m')}</div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # 해당 날짜 업무 필터링
-            day_tasks = df[(df['Date'] == target_date) & (df['Project'].isin(selected_projects))]
-            
-            for _, row in day_tasks.iterrows():
-                # 색상 결정
-                style = COLOR_MAP.get(row['Category'], {"bg": "#F0F0F0", "text": "#444"})
-                
-                st.markdown(f"""
-                    <div class="calendar-card" style="background-color: {style['bg']};">
-                        <div class="card-time" style="color: {style['text']};">{row['Time']}</div>
-                        <div class="card-project" style="color: {style['text']};">{row['Project']}</div>
-                        <div class="card-title" style="color: #222;">{row['Task']}</div>
-                        <div style="font-size: 0.7rem; font-weight: 600; color: {style['text']};">● {row['Status']}</div>
-                    </div>
-                """, unsafe_allow_html=True)
+    for i, month_name in enumerate(months, 1):
+        # 해당 월의 데이터 필터링
+        month_data = df[df['Date'].dt.month == i]
+        
+        st.markdown(f"<div class='month-header'>{month_name.upper()}</div>", unsafe_allow_html=True)
+        
+        if len(month_data) > 0:
+            # 한 줄에 3개씩 배치
+            cols = st.columns(3)
+            for idx, (_, row) in enumerate(month_data.iterrows()):
+                with cols[idx % 3]:
+                    color = CATEGORY_COLORS.get(row['Category'], "#111")
+                    
+                    # 카드 출력
+                    st.markdown(f"""
+                        <div class="project-card" style="border-top: 5px solid {color};">
+                            <div class="title-text">{row['Project']}</div>
+                            <div class="desc-text">{row['Description']}</div>
+                            <div class="manager-text">👤 {row['Manager']}</div>
+                            <div class="badge-container">
+                                <span class="badge badge-q">{row['Quarter']}</span>
+                                <span class="badge badge-status" style="background-color: {color}20; color: {color};">
+                                    {row['Status']}
+                                </span>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info(f"{month_name}에는 예정된 프로젝트가 없습니다.")
 
 except Exception as e:
-    st.error("데이터 로딩 실패. 구글 시트 공유 설정과 컬럼명(Project, Task, Date, Time, Category, Status)을 확인하세요.")
+    st.error(f"데이터 로드 실패: {e}")
+    st.info("구글 시트 헤더가 [Project, Description, Manager, Date, Quarter, Status, Category] 인지 확인하세요.")
