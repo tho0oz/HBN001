@@ -2,161 +2,164 @@ import streamlit as st
 import pandas as pd
 
 # 1. 페이지 설정
-st.set_page_config(page_title="한빛앤 프로덕트 로드맵", layout="wide")
+st.set_page_config(page_title="한빛앤 로드맵", layout="wide", initial_sidebar_state="collapsed")
 
-# 2. 커스텀 CSS (이미지와 동일한 스타일링)
+# 구글 시트 연동
+SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
+SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
+
+# 2. 디자인 CSS (상하 여백 긴급 축소)
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+<style>
+    /* [1] 스트림릿 내부 반응형 패딩 및 마진 완전 박멸 */
+    header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     
-    html, body, [class*="css"] {
-        font-family: 'Noto Sans KR', sans-serif;
-        background-color: #f8f9fa;
+    /* 모든 캐시 컨테이너 및 블록 패딩 강제 0 */
+    [data-testid="stAppViewBlockContainer"], 
+    [data-testid="stVerticalBlock"],
+    [class*="st-emotion-cache"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        max-width: 100% !important;
     }
     
-    .main-title {
-        font-size: 32px;
-        font-weight: 800;
-        margin-bottom: 5px;
-        color: #1e1e1e;
-    }
-    
-    .sub-title {
-        font-size: 16px;
-        color: #6c757d;
-        margin-bottom: 30px;
+    .stApp { background-color: #F2F5F8 !important; }
+
+    /* [2] 고정 규격 설정 */
+    :root {
+        --side-margin: 60px;
+        --grid-column-gap: 20px; /* 가로 간격 */
+        --grid-row-gap: 8px;     /* 세로 간격 (이 값을 줄여서 촘촘하게 만듭니다) */
     }
 
-    /* 타임라인 그리드 레이아웃 */
-    .timeline-container {
+    /* 상단 고정 영역 */
+    .sticky-top-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background-color: rgba(242, 245, 248, 0.9);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        padding: 30px var(--side-margin) 15px var(--side-margin);
+        box-sizing: border-box;
+    }
+
+    .main-title { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.2px; }
+    .sub-title { color: #6A7683; margin: 5px 0 20px 0; font-weight: 500; font-size: 0.85rem; }
+
+    /* 그리드 레이아웃 (세로 간격 row-gap 적용) */
+    .roadmap-grid {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
-        gap: 20px;
-        margin-top: 20px;
+        column-gap: var(--grid-column-gap);
+        row-gap: var(--grid-row-gap); /* 카드 사이 상하 여백 조절 */
+        width: 100%;
+        box-sizing: border-box;
     }
 
-    .month-header {
-        background: white;
-        padding: 10px;
-        text-align: center;
-        border-radius: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
+    .month-label { 
+        background-color: #FFFFFF; 
+        color: #1A1A1A; 
+        padding: 10px; 
+        border-radius: 12px; 
+        font-weight: 800; 
+        font-size: 0.9rem; 
+        text-align: center; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
     }
 
-    /* 로드맵 카드 스타일 */
-    .project-card {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        border: 1px solid #eee;
-        position: relative;
-        transition: transform 0.2s;
+    /* [3] 본문 영역 */
+    .main-content-area {
+        margin-top: 155px; /* 헤더 높이 밀착 */
+        padding: 0 var(--side-margin) 60px var(--side-margin);
+        width: 100%;
+        box-sizing: border-box;
     }
+
+    /* 카드 디자인 (마진 제거 후 그리드 갭으로 제어) */
+    .project-card { 
+        background-color: #FFFFFF !important; 
+        border-radius: 20px; 
+        border: 1px solid rgba(0,0,0,0.05); 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
+        margin-bottom: 0 !important; /* 상하 마진 제거 */
+        overflow: hidden;
+    }
+    .project-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+    summary { list-style: none; padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    summary::-webkit-details-marker { display: none; }
     
-    .project-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-    }
+    .card-project-title { font-size: 1rem; font-weight: 800; color: #1A1A1A; }
+    .card-content { padding: 0 18px 18px 18px; }
+    .card-desc { font-size: 0.85rem; line-height: 1.4; margin: 6px 0; color: #333; font-weight: 500; }
+    .card-manager { font-size: 0.75rem; color: #1A1A1A; opacity: 0.6; margin: 0; }
 
-    .project-title {
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 10px;
-        color: #212529;
-    }
+    .arrow-icon { width: 8px; height: 8px; border-top: 2px solid #BCB8AD; border-right: 2px solid #BCB8AD; transform: rotate(135deg); transition: transform 0.3s ease; }
+    details[open] .arrow-icon { transform: rotate(-45deg); border-color: #1A1A1A; }
 
-    /* 상태 배지 스타일 */
-    .badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    
-    .status-qa { background-color: #e6f9f0; color: #17a05e; }        /* QA 진행중: 초록 */
-    .status-dev { background-color: #e7f3ff; color: #007bff; }       /* 개발 진행중: 파랑 */
-    .status-plan { background-color: #f1f3f5; color: #495057; }      /* 논의 예정: 회색 */
-    .status-ready { background-color: #fff9db; color: #f08c00; }     /* 개발 예정: 주황/노랑 */
+    .badge-wrapper { display: flex; gap: 4px; margin-top: 4px; }
+    .badge { padding: 3px 10px; border-radius: 7px; font-size: 0.65rem; font-weight: 700; }
+</style>
+""", unsafe_allow_html=True)
 
-    /* 화살표 아이콘 대체 (카드 오른쪽 끝) */
-    .arrow {
-        position: absolute;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #dee2e6;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# 3. 데이터 로드
+COLOR_PALETTE = {
+    "논의": {"main": "#495057"}, "기획": {"main": "#FF9500"}, "디자인": {"main": "#5E5CE6"},
+    "개발": {"main": "#007AFF"}, "QA": {"main": "#34C759"}, "배포": {"main": "#FF2D55"},
+    "Default": {"main": "#ADB5BD"}
+}
 
-# 3. 데이터 로드 함수
+@st.cache_data(ttl=5)
 def load_data():
-    sheet_id = "1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA"
-    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-    try:
-        df = pd.read_csv(url)
-        return df
-    except:
-        # 테스트용 더미 데이터 (시트 접근 안될 경우)
-        data = {
-            'Project': ['주문/결제 개편', '뷰어 개편', 'HA+ 디지털교재', '교강사 전자책 증정', '한빛+ App 런칭', '마이한빛 개편'],
-            'StartMonth': [1, 1, 1, 1, 1, 1],
-            'EndMonth': [1, 1, 3, 1, 3, 3],
-            'Status 1': ['QA 진행중', '개발 진행중', '개발 예정', '개발 진행중', '개발 진행중', '논의 예정']
-        }
-        return pd.DataFrame(data)
+    try: return pd.read_csv(SHEET_URL)
+    except: return pd.DataFrame()
 
 df = load_data()
 
-# 4. 헤더 렌더링
-st.markdown('<div class="main-title">한빛앤 프로덕트 로드맵</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">2026 상반기 마일스톤 타임라인</div>', unsafe_allow_html=True)
-
-# 5. 월별 헤더 (1월~6월)
-cols = st.columns(6)
-months = ["1월", "2월", "3월", "4월", "5월", "6월"]
-for i, month in enumerate(months):
-    cols[i].markdown(f'<div class="month-header">{month}</div>', unsafe_allow_html=True)
-
-# 6. 로드맵 본문 렌더링
-# CSS Grid를 활용하여 프로젝트 카드가 여러 컬럼을 차지하도록 구현
-for _, row in df.iterrows():
-    # 상태별 클래스 지정
-    status_class = "status-plan"
-    status_text = row['Status 1']
-    
-    if "QA" in status_text: status_class = "status-qa"
-    elif "개발 진행" in status_text: status_class = "status-dev"
-    elif "개발 예정" in status_text: status_class = "status-ready"
-    
-    # 시작월과 종료월 계산 (1~6)
-    start = int(row['StartMonth'])
-    end = int(row['EndMonth'])
-    span = end - start + 1
-    
-    # Streamlit 컬럼 시스템을 활용한 배치
-    # 시작 위치에 맞춰 빈 공간(empty columns)을 만들거나, 
-    # HTML Grid를 직접 사용하여 더 정확한 레이아웃 구현
-    
-    grid_html = f"""
-    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; margin-bottom: 15px;">
-        <div style="grid-column: {start} / span {span};">
-            <div class="project-card">
-                <div class="project-title">{row['Project']}</div>
-                <div class="badge {status_class}">{status_text}</div>
-                <div class="arrow">❯</div>
-            </div>
-        </div>
+# 4. 상단 고정 영역
+header_html = f"""
+<div class="sticky-top-area">
+    <div class="main-title">한빛앤 프로덕트 로드맵</div>
+    <div class="sub-title">2026 상반기 마일스톤 타임라인</div>
+    <div class="roadmap-grid">
+        <div class="month-label">1월</div><div class="month-label">2월</div>
+        <div class="month-label">3월</div><div class="month-label">4월</div>
+        <div class="month-label">5월</div><div class="month-label">6월</div>
     </div>
-    """
-    st.markdown(grid_html, unsafe_allow_html=True)
+</div>
+"""
+st.markdown(header_html, unsafe_allow_html=True)
 
-# 7. 푸터 관리자 모드
-st.sidebar.markdown("### 대시보드 관리")
-if st.sidebar.button("데이터 새로고침"):
-    st.rerun()
+# 5. 메인 본문 영역
+if not df.empty:
+    cards_html = '<div class="main-content-area"><div class="roadmap-grid">'
+    for _, row in df.iterrows():
+        try:
+            start, end = int(row['StartMonth']), int(row['EndMonth'])
+            span = end - start + 1
+            cat_name, status_text = str(row['Category']).strip(), str(row['Status']).strip()
+            theme = COLOR_PALETTE.get(cat_name, COLOR_PALETTE["Default"])
+            combined_label = f"{cat_name} {status_text}"
+            grid_pos = f"grid-column: {start} / span {span};"
+            
+            cards_html += (
+                f'<details class="project-card" style="{grid_pos}">'
+                f'<summary><div>'
+                f'<div class="card-project-title">{row["Project"]}</div>'
+                f'<div class="badge-wrapper"><div class="badge" style="background-color: {theme["main"]}15; color: {theme["main"]}; border: 1.5px solid {theme["main"]}30;">{combined_label}</div></div>'
+                f'</div><div class="arrow-icon"></div></summary>'
+                f'<div class="card-content">'
+                f'<div class="card-desc">{row["Description"]}</div>'
+                f'<div class="card-manager">{row["Manager"]}</div>'
+                f'</div></details>'
+            )
+        except: continue
+    cards_html += '</div></div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
