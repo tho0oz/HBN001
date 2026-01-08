@@ -12,12 +12,12 @@ if 'selected_month' not in st.session_state:
 SHEET_ID = '1Z3n4mH5dbCgv3RhSn76hqxwad6K60FyEYXD_ns9aWaA' 
 SHEET_URL = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv'
 
-# 2. 디자인 CSS (설명/담당자 제거 및 펼치기 기능 삭제)
+# 2. 디자인 CSS (카드 너비 고정 + 사이드바 고정 + 여백 리셋)
 st.markdown("""<style>
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     footer { display: none !important; }
 
-    /* [사용자 제공 패딩 로직] */
+    /* [사용자 제공 패딩 로직 적용] */
     .st-emotion-cache-zy6yx3 {
         width: 100% !important;
         max-width: initial !important;
@@ -38,6 +38,18 @@ st.markdown("""<style>
     .main-title { font-size: 2rem; font-weight: 800; color: #1A1A1A; margin: 0; letter-spacing: -1.5px; }
     .sub-title { color: #6A7683; margin: 8px 0 0 0; font-weight: 500; font-size: 0.9rem; }
 
+    /* [수정] 월 버튼 사이드바 고정 (Sticky) */
+    .sticky-sidebar {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 30px; /* 스크롤 시 상단 여백 */
+        display: flex;
+        flex-direction: column;
+        gap: 80px; /* 월 버튼 사이 간격 (수직 스패닝 높이와 맞춤) */
+        padding-top: 10px;
+        z-index: 99;
+    }
+
     /* 월 버튼 디자인 */
     div.stButton > button {
         background-color: #FFFFFF !important;
@@ -47,28 +59,28 @@ st.markdown("""<style>
         padding: 12px !important;
         font-weight: 800 !important;
         font-size: 1.1rem !important;
-        width: 100% !important;
+        width: 80px !important; /* 월 버튼 너비 고정 */
+        height: 60px !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
         transition: all 0.2s ease !important;
-        height: 60px;
     }
     div.stButton > button:hover {
         transform: translateY(-3px) !important;
         box-shadow: 0 8px 20px rgba(0,0,0,0.06) !important;
-        border-color: rgba(0,0,0,0.1) !important;
     }
 
-    /* 수직 타임라인 그리드 */
-    .vertical-roadmap-grid {
+    /* [수정] 카드 가로 너비 고정 및 그리드 배치 */
+    .roadmap-content-grid {
         display: grid;
-        grid-template-columns: 100px 1fr;
-        grid-template-rows: repeat(6, minmax(120px, auto));
+        grid-template-columns: repeat(auto-fill, 320px); /* 카드 너비를 320px로 고정 */
+        grid-auto-rows: 140px; /* 수직 월 간격과 일치 */
         gap: 20px;
         align-items: start;
     }
 
-    /* [수정] 고정형 프로젝트 카드 (펼치기 기능 없음) */
+    /* 고정형 프로젝트 카드 */
     .project-card { 
+        width: 320px !important; /* 가로 너비 320px 고정 */
         background-color: #FFFFFF !important; 
         border-radius: 22px; border: 1px solid rgba(0,0,0,0.05); 
         box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
@@ -77,19 +89,16 @@ st.markdown("""<style>
         height: calc(100% - 10px);
         display: flex;
         flex-direction: column;
-        justify-content: center; /* 텍스트 중앙 정렬 */
+        justify-content: center;
+        box-sizing: border-box;
     }
     .project-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
 
-    .card-project-title { font-size: 1.15rem; font-weight: 800; color: #1A1A1A; margin-bottom: 8px; }
-    
+    .card-project-title { font-size: 1.1rem; font-weight: 800; color: #1A1A1A; margin-bottom: 8px; line-height: 1.3; }
     .badge { padding: 4px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; display: inline-block; }
-
-    /* 필터링 모드 세로 리스트 */
-    .filter-list { display: flex; flex-direction: column; gap: 16px; }
 </style>""", unsafe_allow_html=True)
 
-# 3. 데이터 로드 및 설정
+# 3. 데이터 로드
 COLOR_PALETTE = {
     "논의": "#495057", "기획": "#FF9500", "디자인": "#5E5CE6",
     "개발": "#007AFF", "QA": "#34C759", "배포": "#FF2D55", "Default": "#ADB5BD"
@@ -102,7 +111,7 @@ def load_data():
 
 df = load_data()
 
-# 4. 화면 제어
+# 4. 화면 출력 영역
 if st.session_state.selected_month is None:
     st.markdown('<div class="static-header"><div class="main-title">한빛앤 프로덕트 로드맵</div><div class="sub-title">2026 상반기 마일스톤 타임라인</div></div>', unsafe_allow_html=True)
 else:
@@ -113,18 +122,21 @@ else:
 # 5. 콘텐츠 렌더링
 if not df.empty:
     if st.session_state.selected_month is None:
-        cols = st.columns([1, 10])
+        # 레이아웃 분할 (사이드바 1 : 본문 10)
+        col_side, col_main = st.columns([1, 10])
         
-        with cols[0]:
-            st.write('<div style="display: flex; flex-direction: column; gap: 80px; padding-top: 10px;">', unsafe_allow_html=True)
+        with col_side:
+            # 월 버튼 고정 컨테이너 시작
+            st.write('<div class="sticky-sidebar">', unsafe_allow_html=True)
             for m in range(1, 7):
                 if st.button(f"{m}월", key=f"btn_{m}"):
                     st.session_state.selected_month = m
                     st.rerun()
             st.write('</div>', unsafe_allow_html=True)
             
-        with cols[1]:
-            card_grid_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); grid-auto-rows: 140px; gap: 20px;">'
+        with col_main:
+            # 카드 너비가 고정된 그리드 시작
+            card_grid_html = '<div class="roadmap-content-grid">'
             for _, row in df.iterrows():
                 try:
                     start, end = int(row['StartMonth']), int(row['EndMonth'])
@@ -133,7 +145,6 @@ if not df.empty:
                     color = COLOR_PALETTE.get(cat, COLOR_PALETTE["Default"])
                     grid_row_style = f"grid-row: {start} / span {span};"
                     
-                    # 펼치기 기능(details/summary) 삭제, 정보 요약
                     card_grid_html += f'''
                     <div class="project-card" style="{grid_row_style}">
                         <div class="card-project-title">{row['Project']}</div>
@@ -144,22 +155,20 @@ if not df.empty:
             st.markdown(card_grid_html, unsafe_allow_html=True)
 
     else:
+        # 필터링 모드 (상하 정렬)
         m = st.session_state.selected_month
         st.markdown(f'<div style="font-size: 2rem; font-weight: 800; margin-bottom: 25px;">{m}월</div>', unsafe_allow_html=True)
         month_tasks = df[(df['StartMonth'] <= m) & (df['EndMonth'] >= m)]
         if not month_tasks.empty:
-            html_str = '<div class="filter-list">'
             for _, row in month_tasks.iterrows():
                 cat = str(row['Category']).strip()
                 color = COLOR_PALETTE.get(cat, COLOR_PALETTE["Default"])
-                html_str += f'''
-                <div class="project-card">
+                st.markdown(f'''
+                <div class="project-card" style="height: auto; margin-bottom: 15px;">
                     <div class="card-project-title">{row['Project']}</div>
                     <div><div class="badge" style="background-color: {color}15; color: {color}; border: 1.5px solid {color}30;">{cat} {row['Status']}</div></div>
-                </div>'''
-            html_str += '</div>'
-            st.markdown(html_str, unsafe_allow_html=True)
+                </div>''', unsafe_allow_html=True)
         else:
             st.info("진행 중인 프로젝트가 없습니다.")
 else:
-    st.markdown('<div class="main-content">데이터 로딩 중...</div>', unsafe_allow_html=True)
+    st.markdown('<div style="padding-top: 100px; text-align: center; color: #888;">데이터를 불러오는 중입니다...</div>', unsafe_allow_html=True)
